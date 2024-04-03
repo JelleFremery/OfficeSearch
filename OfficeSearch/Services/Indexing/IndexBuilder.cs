@@ -12,20 +12,29 @@ namespace OfficeSearch.Services.Indexing;
 /// <summary>
 /// https://learn.microsoft.com/en-us/azure/search/tutorial-optimize-indexing-push-api
 /// </summary>
-public class Indexer
+public class IndexBuilder : IIndexBuilder
 {
     private readonly SearchClient _searchClient;
     private readonly SearchIndexClient _indexClient;
     private readonly string _indexName;
 
-    public Indexer(IConfiguration _configuration)
+    private const int BatchSize = 100;
+    private const int TotalDocs = 1000;
+
+    public IndexBuilder(IConfiguration configuration)
     {
-        _indexName = _configuration["IndexName"] ?? "";
+        ArgumentNullException.ThrowIfNull(configuration);
 
-        string searchServiceUri = _configuration["SearchServiceUri"] ?? "";
-        string adminApiKey = _configuration["SearchServiceAdminApiKey"] ?? "";
+        var indexName = configuration["IndexName"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(indexName);
+        _indexName = indexName;
 
-        // Create a service and index client.
+        string? searchServiceUri = configuration["SearchServiceUri"];
+        string? adminApiKey = configuration["SearchServiceAdminApiKey"];
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(searchServiceUri);
+        ArgumentException.ThrowIfNullOrWhiteSpace(adminApiKey);
+
         _indexClient = new SearchIndexClient(new Uri(searchServiceUri), new AzureKeyCredential(adminApiKey));
         _searchClient = _indexClient.GetSearchClient(_indexName);
     }
@@ -50,15 +59,13 @@ public class Indexer
         Console.WriteLine("{0}", "Creating index...\n");
         await CreateIndexAsync(_indexName, _indexClient);
 
-        long numDocuments = 1000;
-        DataGenerator dg = new DataGenerator();
-        List<Office> offices = dg.GetOffices(numDocuments);
+        List<Office> offices = DataGenerator.GetOffices(TotalDocs);
 
         Console.WriteLine("{0}", "Uploading using exponential backoff...\n");
-        await ExponentialBackoff.IndexDataAsync(_searchClient, offices, 100, 8);
+        await ExponentialBackoff.IndexDataAsync(_searchClient, offices, BatchSize, 8);
 
         Console.WriteLine("{0}", "Validating all data was indexed...\n");
-        await ValidateIndexAsync(_indexClient, _indexName, numDocuments);
+        await ValidateIndexAsync(_indexClient, _indexName, TotalDocs);
 
         Console.WriteLine("{0}", "\nComplete.\n");
     }
@@ -82,7 +89,7 @@ public class Indexer
         // Create a new search index structure that matches the properties of the Office class.
         // The Address class is referenced from the Office class. The FieldBuilder
         // will enumerate these to create a complex data structure for the index.
-        FieldBuilder builder = new FieldBuilder();
+        FieldBuilder builder = new();
         var definition = new SearchIndex(indexName, builder.Build(typeof(Office)));
 
         await indexClient.CreateIndexAsync(definition);
@@ -103,16 +110,14 @@ public class Indexer
 
     public static async Task TestBatchSizesAsync(SearchClient searchClient, int min = 100, int max = 1000, int step = 100, int numTries = 3)
     {
-        DataGenerator dg = new DataGenerator();
-
         Console.WriteLine("Batch Size \t Size in MB \t MB / Doc \t Time (ms) \t MB / Second");
         for (int numDocs = min; numDocs <= max; numDocs += step)
         {
-            List<TimeSpan> durations = new List<TimeSpan>();
+            List<TimeSpan> durations = [];
             double sizeInMb = 0.0;
             for (int x = 0; x < numTries; x++)
             {
-                List<Office> offices = dg.GetOffices(numDocs);
+                List<Office> offices = DataGenerator.GetOffices(numDocs);
 
                 DateTime startTime = DateTime.Now;
                 await UploadDocumentsAsync(searchClient, offices).ConfigureAwait(false);
@@ -128,15 +133,13 @@ public class Indexer
 
             Console.WriteLine("{0} \t\t {1} \t\t {2} \t\t {3} \t {4}", numDocs, Math.Round(sizeInMb, 3), Math.Round(sizeInMb / numDocs, 3), Math.Round(avgDuration, 3), Math.Round(mbPerSecond, 3));
 
-            // Pausing 2 seconds to let the search service catch its breath
             Thread.Sleep(2000);
         }
 
         Console.WriteLine();
     }
 
-    //Returns size of object in MB
-    public static double EstimateObjectSize(object data)
+    private static double EstimateObjectSize(object data)
     {
         var json = JsonSerializer.Serialize(data);
         var sizeInMb = Encoding.Unicode.GetByteCount(json) / 1000000;
@@ -156,12 +159,17 @@ public class Indexer
         }
         Console.WriteLine("Document Count is {0}\n", indexDocCount);
 
-
+        int validationAttempts = 0;
         var indexStats = await indexClient.GetIndexStatisticsAsync(indexName);
         while (indexStats.Value.DocumentCount != numDocsIndexed)
         {
             Console.WriteLine("Waiting for service statistics to update...\n");
             Thread.Sleep(10000);
+            validationAttempts++;
+            if (validationAttempts > 15)
+            {
+                throw new TimeoutException("Validation failed. Document count did not match expected value.");
+            }
             indexStats = await indexClient.GetIndexStatisticsAsync(indexName);
         }
         Console.WriteLine("Index Statistics: Document Count is {0}", indexStats.Value.DocumentCount);

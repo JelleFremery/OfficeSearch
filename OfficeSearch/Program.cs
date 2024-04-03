@@ -11,8 +11,8 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
 
-builder.Services.AddScoped<QueryService>();
-builder.Services.AddScoped<Indexer>();
+builder.Services.AddScoped<IQueryService, QueryService>();
+builder.Services.AddScoped<IIndexBuilder, IndexBuilder>();
 
 var app = builder.Build();
 

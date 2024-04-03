@@ -1,24 +1,14 @@
-﻿using Azure;
-using Azure.Search.Documents;
-using Azure.Search.Documents.Indexes;
+﻿using Microsoft.AspNetCore.Mvc;
 using OfficeSearch.Models;
-using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
-using OfficeSearch.Services.Querying;
 using OfficeSearch.Services.Indexing;
+using OfficeSearch.Services.Querying;
+using System.Diagnostics;
 
 namespace OfficeSearch.Controllers;
 
-public class HomeController : Controller
+public class HomeController(IQueryService queryService, IIndexBuilder indexBuilder) : Controller
 {
-    private readonly QueryService _queryService;
-    private readonly Indexer _indexer;
-
-    public HomeController(QueryService queryService, Indexer indexer)
-    {
-        _queryService = queryService;
-        _indexer = indexer;
-    }
+    private readonly bool _optimizeBatchSize = false;
 
     public IActionResult Index()
     {
@@ -30,14 +20,8 @@ public class HomeController : Controller
     {
         try
         {
-            // Check for a search string
-            if (model.searchText == null)
-            {
-                model.searchText = "";
-            }
-
-            // Send the query to Search.
-            await _queryService.RunQueryAsync(model);
+            model.SearchText ??= "";
+            await queryService.RunQueryAsync(model);
             return View(model);
         }
 
@@ -56,8 +40,16 @@ public class HomeController : Controller
     [HttpPost]
     public async Task<IActionResult> Generate()
     {
-        await _indexer.Build();
-        ViewBag.Message = "Indexing complete!";
+        if (_optimizeBatchSize)
+        {
+            await indexBuilder.OptimizeBatchSize();
+            ViewBag.Message = "Check the Console to determine optimal batch size.";
+        }
+        else
+        {
+            await indexBuilder.Build();
+            ViewBag.Message = "Index complete!";
+        }
         return View("BuildIndex");
     }
 

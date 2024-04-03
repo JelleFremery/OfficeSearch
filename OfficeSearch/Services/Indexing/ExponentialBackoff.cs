@@ -2,6 +2,7 @@
 using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using OfficeSearch.Models;
+using System.Security.Cryptography.Xml;
 
 namespace OfficeSearch.Services.Indexing;
 
@@ -17,7 +18,7 @@ public static class ExponentialBackoff
         Console.WriteLine("Creating {0} threads...\n", numThreads);
 
         // Creating a list to hold active tasks
-        List<Task<IndexDocumentsResult>> uploadTasks = new List<Task<IndexDocumentsResult>>();
+        List<Task<IndexDocumentsResult>> uploadTasks = [];
 
         for (int i = 0; i < numDocs; i += batchSize)
         {
@@ -72,7 +73,7 @@ public static class ExponentialBackoff
                 attempts++;
                 result = await searchClient.IndexDocumentsAsync(batch).ConfigureAwait(false);
 
-                var failedDocuments = result.Results.Where(r => r.Succeeded != true).ToList();
+                var failedDocuments = result.Results.Where(r => !r.Succeeded).ToList();
 
                 // handle partial failure
                 if (failedDocuments.Count > 0)
@@ -94,12 +95,10 @@ public static class ExponentialBackoff
                         batch = IndexDocumentsBatch.Upload(offices);
 
                         Task.Delay(delay).Wait();
-                        delay = delay * 2;
+                        delay *= 2;
                         continue;
                     }
                 }
-
-
                 return result;
             }
             catch (RequestFailedException ex)
@@ -115,10 +114,10 @@ public static class ExponentialBackoff
                 }
 
                 Task.Delay(delay).Wait();
-                delay = delay * 2;
+                delay *= 2;
             }
         } while (true);
 
-        return null;
+        throw new InvalidOperationException("Did not index documents correctly.");
     }
 }

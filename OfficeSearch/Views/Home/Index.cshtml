@@ -9,10 +9,12 @@
     <img src="~/images/azure-logo.png" width="80" />
     <h2>Search for Betabit Offices</h2>
 
-    <p>Use this app to test AI Search server-side behaviors, including sorting, filters, and relevance tuning. Modify the RunQueryAsnc method to change the operation.
+    <p>
+        Use this app to test AI Search server-side behaviors, including sorting, filters, and relevance tuning. Modify the RunQueryAsnc method to change the operation.
     </p>
 
-    <p>The app connects to a index created programmatically on your search service using the default search configuration (simple search, with searchMode=Any).
+    <p>
+        The app connects to a index created programmatically on your search service using the default search configuration (simple search, with searchMode=Any).
     </p>
 
     <form asp-controller="Home" asp-action="Index">
@@ -29,18 +31,19 @@
         @if (Model != null)
         {
             // Show the result count.
-            <p>@Model.resultList.TotalCount Results</p>
-            var results = new List<SearchResult<Office>>();
+            <p>@(Model.GetSearchResults()?.TotalCount ?? 0) Results</p>
+            List<SearchResult<Office>>? results = null;
             // Get search results.
             try
             {
-                results = Model.resultList.GetResults().ToList();
+                results = Model.GetSearchResults()?.GetResults().ToList();
             }
             catch (Exception e)
             {
                 <p>Exception: @e.Message</p>
             }
 
+            @if (results is not null)
             {
                 <table class="table">
                     <thead>
@@ -76,7 +79,7 @@
                             </tr>
                         }
                     </tbody>
-                  </table>
+                </table>
             }
         }
     }
