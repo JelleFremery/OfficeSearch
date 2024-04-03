@@ -1,0 +1,83 @@
+﻿@using Azure.Search.Documents.Models
+@model OfficeSearch.Models.OfficeSearchData;
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div>
+    <img src="~/images/azure-logo.png" width="80" />
+    <h2>Search for Betabit Offices</h2>
+
+    <p>Use this app to test AI Search server-side behaviors, including sorting, filters, and relevance tuning. Modify the RunQueryAsnc method to change the operation.
+    </p>
+
+    <p>The app connects to a index created programmatically on your search service using the default search configuration (simple search, with searchMode=Any).
+    </p>
+
+    <form asp-controller="Home" asp-action="Index">
+        <p>
+            <input type="text" name="searchText" />
+            <input type="submit" value="Search" />
+        </p>
+    </form>
+</div>
+
+<div>
+    @using (Html.BeginForm("Index", "Home", FormMethod.Post))
+    {
+        @if (Model != null)
+        {
+            // Show the result count.
+            <p>@Model.resultList.TotalCount Results</p>
+            var results = new List<SearchResult<Office>>();
+            // Get search results.
+            try
+            {
+                results = Model.resultList.GetResults().ToList();
+            }
+            catch (Exception e)
+            {
+                <p>Exception: @e.Message</p>
+            }
+
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Rating</th>
+                            <th>Tags</th>
+                            <th>City</th>
+                            <th>State</th>
+                            <th>Description</th>
+                            <th>Description (NL)</th>
+                            <th>Description (SR)</th>
+                            <th>Parking spots #</th>
+                            <th>Desks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in results)
+                        {
+                            <tr>
+                                <td>@d.Document.OfficeName</td>
+                                <td>@d.Document.Category</td>
+                                <td>@d.Document.Rating</td>
+                                <td>@d.Document.Tags</td>
+                                <td>@d.Document.Address.City</td>
+                                <td>@d.Document.Address.StateProvince</td>
+                                <td>@d.Document.Description</td>
+                                <td>@d.Document.DescriptionNl</td>
+                                <td>@d.Document.DescriptionSr</td>
+                                <td>@d.Document.NrOfParkingSpots</td>
+                                <td>@string.Join(", ", d.Document.Desks.Select(x => x.Name))</td>
+                            </tr>
+                        }
+                    </tbody>
+                  </table>
+            }
+        }
+    }
+</div>

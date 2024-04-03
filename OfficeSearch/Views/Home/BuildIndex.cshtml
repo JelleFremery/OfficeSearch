@@ -1,0 +1,14 @@
+﻿@{
+    ViewData["Title"] = "Build Index";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Use this page to generate an index.</p>
+
+<p class="alert">@ViewBag["Message"]</p>
+
+<form asp-controller="Home" asp-action="Generate">
+    <p>        
+        <input type="submit" value="Create index" />
+    </p>
+</form>
