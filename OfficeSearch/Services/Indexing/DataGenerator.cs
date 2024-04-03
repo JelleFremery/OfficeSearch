@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using OfficeSearch.Models;
+﻿using OfficeSearch.Models;
 using System.Text;
 
 namespace OfficeSearch.Services.Indexing;

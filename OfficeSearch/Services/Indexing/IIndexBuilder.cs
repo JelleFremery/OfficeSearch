@@ -1,9 +1,7 @@
-﻿
-namespace OfficeSearch.Services.Indexing
+﻿namespace OfficeSearch.Services.Indexing;
+
+public interface IIndexBuilder
 {
-    public interface IIndexBuilder
-    {
-        Task Build();
-        Task OptimizeBatchSize();
-    }
+    Task Build();
+    Task OptimizeBatchSize();
 }

@@ -1,9 +1,8 @@
 ﻿using OfficeSearch.Models;
 
-namespace OfficeSearch.Services.Querying
+namespace OfficeSearch.Services.Querying;
+
+public interface IQueryService
 {
-    public interface IQueryService
-    {
-        Task RunQueryAsync(OfficeSearchData model);
-    }
+    Task RunQueryAsync(OfficeSearchData model);
 }

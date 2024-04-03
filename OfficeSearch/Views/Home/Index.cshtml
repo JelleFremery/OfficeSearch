@@ -29,11 +29,9 @@
     @using (Html.BeginForm("Index", "Home", FormMethod.Post))
     {
         @if (Model != null)
-        {
-            // Show the result count.
+        {            
             <p>@(Model.GetSearchResults()?.TotalCount ?? 0) Results</p>
-            List<SearchResult<Office>>? results = null;
-            // Get search results.
+            List<SearchResult<Office>>? results = null;        
             try
             {
                 results = Model.GetSearchResults()?.GetResults().ToList();
