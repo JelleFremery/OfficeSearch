@@ -24,7 +24,6 @@ public class HomeController(IQueryService queryService, IIndexBuilder indexBuild
             await queryService.RunQueryAsync(model);
             return View(model);
         }
-
         catch
         {
             return View("Error", new ErrorViewModel { RequestId = "1" });

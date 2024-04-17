@@ -7,27 +7,27 @@ namespace OfficeSearch.Models
     public partial class Office
     {
         [SimpleField(IsFilterable = true, IsKey = true)]
-        public required string OfficeId { get; set; }
+        public string OfficeId { get; set; }
 
         [SearchableField(IsSortable = true)]
-        public required string OfficeName { get; set; }
+        public string OfficeName { get; set; }
 
         [SearchableField(AnalyzerName = LexicalAnalyzerName.Values.EnLucene)]
-        public required string Description { get; set; }
+        public string Description { get; set; }
 
         [SearchableField(AnalyzerName = LexicalAnalyzerName.Values.NlLucene)]
         [JsonPropertyName("Description_nl")]
-        public required string DescriptionNl { get; set; }
+        public string DescriptionNl { get; set; }
 
         [SearchableField(AnalyzerName = LexicalAnalyzerName.Values.SrCyrillicMicrosoft)]
         [JsonPropertyName("Description_sr")]
-        public required string DescriptionSr { get; set; }
+        public string DescriptionSr { get; set; }
 
         [SearchableField(IsFilterable = true, IsSortable = true, IsFacetable = true)]
-        public required string Category { get; set; }
+        public string Category { get; set; }
 
         [SearchableField(IsFilterable = true, IsFacetable = true)]
-        public required string[] Tags { get; set; }
+        public string[] Tags { get; set; }
 
         [SimpleField(IsFilterable = true, IsSortable = true, IsFacetable = true)]
         public int NrOfParkingSpots { get; set; }
@@ -38,9 +38,8 @@ namespace OfficeSearch.Models
         [SimpleField(IsFilterable = true, IsSortable = true, IsFacetable = true)]
         public double? Rating { get; set; }
 
-        public required Address Address { get; set; }
+        public Address Address { get; set; }
 
-        public required Desk[] Desks { get; set; }
+        public Desk[] Desks { get; set; }
     }
-
 }
